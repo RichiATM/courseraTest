@@ -1,31 +1,99 @@
-      var mainApp = angular.module("LunchCheck", []);
+(function () {
+'use strict';
 
-      mainApp.controller('LunchCheckController', LunchCheckController);
+angular.module('ShoppingListCheckOff', [])
+.controller('AlreadyBoughtController', AlreadyBoughtController)
+.controller('ToBuyController', ToBuyController)
+.service('ShoppingListCheckOffService', ShoppingListCheckOffService);
 
-      LunchCheckController.$inject = ['$scope'];
-      function LunchCheckController($scope){
-        $scope.message = "";
+AlreadyBoughtController.$inject = ['ShoppingListCheckOffService'];
+function AlreadyBoughtController(ShoppingListCheckOffService){
+    var bought = this;
+    
+    bought.itemBought = ShoppingListCheckOffService.getBought();
 
-        $scope.butt = function(){
-          if($scope.lunch == null || $scope.lunch == " "){
-            cont = 0;
-            list = "";
-          }else{
-            list = $scope.lunch.split(',');
-          }
-          var cont = 0;
-          for(var i=0; i<list.length; i++){
-            cont++;
-          }
-          if(cont == 0){
-            $scope.message = "Please enter data first";
-          }
-          if(cont > 0 && cont <= 3){
-            $scope.message = "Enjoy!";
-          }
-          if(cont >= 4){
-            $scope.message = "Too much";
-          }
-          
-        } 
-      };
+    bought.push = ShoppingListCheckOffService.getPush();   
+
+}
+    
+ToBuyController.$inject = ['ShoppingListCheckOffService'];
+function ToBuyController(ShoppingListCheckOffService){
+    var toBuy = this;
+    
+    toBuy.itemBuy = ShoppingListCheckOffService.getBuy();
+    
+    toBuy.action = function(index, quantity, name){
+        ShoppingListCheckOffService.action(index, quantity, name);
+        toBuy.empty = ShoppingListCheckOffService.getEmpty();
+    }
+    
+
+    
+}
+    
+function ShoppingListCheckOffService(){
+    var service = this;
+    
+    var Tbuy = [{
+                  name: "cookies",
+                  quantity: 10
+                },
+                {
+                  name: "fanta",
+                  quantity: 10
+                },
+                {
+                  name: "Messi",
+                  quantity: 10
+                },
+                {
+                  name: "Ronaldo",
+                  quantity: 7
+                },
+                {
+                  name: "Griezmann",
+                  quantity: 7
+                }
+               ];
+   
+    var Tbought = [];
+    
+    var empty = false;
+    
+    var push = true;
+    
+    service.action = function(index, quantity, name){
+        var item = {
+          name: name,
+          quantity: quantity
+        };
+        Tbought.push(item);
+        
+        Tbuy.splice(index, 1);
+        if(Tbuy.length == 0){
+            empty = true;
+        }else{
+            push = false;
+        }
+        
+    }
+    
+
+    service.getBuy = function(){
+        return Tbuy;
+    }
+    
+    service.getBought = function(){
+        return Tbought;
+    }
+    
+    service.getEmpty = function(){
+        return empty;
+    }
+    
+    service.getPush = function(){
+        return push;
+    }
+}
+
+})();
