@@ -1,99 +1,96 @@
 (function () {
 'use strict';
 
-angular.module('ShoppingListCheckOff', [])
-.controller('AlreadyBoughtController', AlreadyBoughtController)
-.controller('ToBuyController', ToBuyController)
-.service('ShoppingListCheckOffService', ShoppingListCheckOffService);
+angular.module('NarrowItDownApp', [])
+.controller('NarrowItDownController', NarrowItDownController)
+.factory('MenuSearchService', MenuSearchService)
+.directive('foundItems', foundItemsDirective);
 
-AlreadyBoughtController.$inject = ['ShoppingListCheckOffService'];
-function AlreadyBoughtController(ShoppingListCheckOffService){
-    var bought = this;
-    
-    bought.itemBought = ShoppingListCheckOffService.getBought();
+function foundItemsDirective() {
+  var ddo = {
+    templateUrl: 'foundItems.html',
+    scope: {
+      items: '<',
+      onRemove: '&'
+    },
+    controller: foundItemsDirectiveController,
+    controllerAs: 'narrow',
+    bindToController: true
+  };
 
-    bought.push = ShoppingListCheckOffService.getPush();   
+  return ddo;
+}
+
+
+function foundItemsDirectiveController() {
+  var narrow = this;
 
 }
+
+NarrowItDownController.$inject = ['MenuSearchService', '$http'];
+function NarrowItDownController(MenuSearchService, $http) {
+    var narrow = this;
+    narrow.myTitle = "Holi";
+    var menu = MenuSearchService();
+
     
-ToBuyController.$inject = ['ShoppingListCheckOffService'];
-function ToBuyController(ShoppingListCheckOffService){
-    var toBuy = this;
-    
-    toBuy.itemBuy = ShoppingListCheckOffService.getBuy();
-    
-    toBuy.action = function(index, quantity, name){
-        ShoppingListCheckOffService.action(index, quantity, name);
-        toBuy.empty = ShoppingListCheckOffService.getEmpty();
+    narrow.action = function(){
+        narrow.items = menu.getItems(narrow.plate);
     }
     
-
-    
+    narrow.removeItem = function (itemIndex) {
+        if(narrow.items != null){
+            menu.removeItem(itemIndex);
+        }
+      };
 }
     
-function ShoppingListCheckOffService(){
+getMatchedMenuItems.$inject = ['$http', 'searchTerm'];
+function getMatchedMenuItems($http, searchTerm) {
     var service = this;
     
-    var Tbuy = [{
-                  name: "cookies",
-                  quantity: 10
-                },
-                {
-                  name: "fanta",
-                  quantity: 10
-                },
-                {
-                  name: "Messi",
-                  quantity: 10
-                },
-                {
-                  name: "Ronaldo",
-                  quantity: 7
-                },
-                {
-                  name: "Griezmann",
-                  quantity: 7
-                }
-               ];
-   
-    var Tbought = [];
-    
-    var empty = false;
-    
-    var push = true;
-    
-    service.action = function(index, quantity, name){
-        var item = {
-          name: name,
-          quantity: quantity
-        };
-        Tbought.push(item);
-        
-        Tbuy.splice(index, 1);
-        if(Tbuy.length == 0){
-            empty = true;
-        }else{
-            push = false;
-        }
-        
-    }
-    
+    service.items = [];
 
-    service.getBuy = function(){
-        return Tbuy;
-    }
+    $http({
+        url: "https://davids-restaurant.herokuapp.com/menu_items.json", 
+        method: "GET"
+    }).then(function(response) {
+        service.items = angular.fromJson(response.data.menu_items);
+    });
     
-    service.getBought = function(){
-        return Tbought;
-    }
+    var list = [];
+    service.getItems = function (item) {
+        var cont = 0;
+        var bool = false;
+        if(service.items != null){
+            for(var i=0;i<service.items.length;i++){
+                if(service.items[i].description.search(item) > 0){
+                    list[cont] = service.items[i];
+                    cont++;
+                    bool = true;
+                }
+            }          
+        }
+        if(!bool){
+            list = [];
+            list[0] = {name: "Nothing found"};
+        }
+        return list;
+    };
+                    
+  service.removeItem = function (itemIndex) {
+    list.splice(itemIndex, 1);
+  };
+  
+}
     
-    service.getEmpty = function(){
-        return empty;
-    }
+MenuSearchService.$inject = ['$http'];
+function MenuSearchService($http){
+    var factory = function(searchTerm){
+        return new getMatchedMenuItems($http, searchTerm);
+    };
     
-    service.getPush = function(){
-        return push;
-    }
+    return factory;
 }
 
 })();
